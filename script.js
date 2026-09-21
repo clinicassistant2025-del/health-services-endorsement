@@ -207,6 +207,7 @@ function viewRecord(id){
       </tbody>
     </table>
     </div>`;
+  renderPrintDocument(r);
   showPage("view");
 }
 
@@ -247,5 +248,144 @@ function importBackup(event){
   };
   reader.readAsText(file);
 }
+
+
+function formatPrintDate(v){
+  if(!v) return "";
+  const d=new Date(v+"T00:00:00");
+  if(Number.isNaN(d.getTime())) return v;
+  const months=["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+  return String(d.getDate()).padStart(2,"0")+months[d.getMonth()]+d.getFullYear();
+}
+
+function checkedShift(actual, target){
+  return actual===target ? "☑" : "☐";
+}
+
+function rowsForStatus(record,status,columns="normal",count=9){
+  const list=(record.employees||[]).filter(x=>x.status===status);
+  let html="";
+  for(let i=0;i<count;i++){
+    const x=list[i];
+    if(columns==="ml"){
+      html+=`<tr><td>${x?i+1:""}</td><td>${x?esc(x.employee_name):""}</td><td>${x?(status==="ML"?formatPrintDate(x.date_of_return):formatPrintDate(x.date_of_labor)):""}</td></tr>`;
+    }else{
+      html+=`<tr><td>${x?i+1:""}</td><td>${x?esc(x.employee_name):""}</td><td>${x?esc(x.complaint_diagnosis):""}</td><td>${x?esc(x.remarks):""}</td></tr>`;
+    }
+  }
+  return html;
+}
+
+function printSection(title,status,count=9,columns="normal",extraClass=""){
+  const ml=columns==="ml";
+  return `<div class="print-section ${extraClass}">
+    <div class="print-section-title">${title}</div>
+    <table class="print-table">
+      <thead>${ml
+        ? `<tr><th>NO.</th><th>NAME OF EMPLOYEE</th><th>${status==="ML"?"EXPECTED DATE OF RETURN":"EXPECTED DATE OF LABOR"}</th></tr>`
+        : `<tr><th>NO.</th><th>NAME OF EMPLOYEE</th><th>COMPLAINT / DIAGNOSIS</th><th>REMARKS</th></tr>`}
+      </thead>
+      <tbody>${rowsForStatus(window.__printRecord,status,columns,count)}</tbody>
+    </table>
+  </div>`;
+}
+
+function renderPrintDocument(r){
+  window.__printRecord=r;
+  const summaryStatuses=[
+    ["Total Number of Consultations:","CONSULTATION"],
+    ["Total Number of FTW Issued Online:","FTW-ONLINE"],
+    ["Total Number of FTW Issued In-person:","FTW-IN PERSON"],
+    ["Total Number of Hospital Conduction:","HOSPITAL CONDUCTION"],
+    ["Total Number of WRA:","WRA"],
+    ["Total Number of WME:","WME"],
+    ["Total Number of Sick Leave:","SICK LEAVE"],
+    ["Total Number of Sick Leave Notification:","SL NOTIFICATION"],
+    ["Total Number of Maternity Leave:","ML"],
+    ["Total Number of Maternity Leave Notification:","ML NOTIFICATION"]
+  ];
+  const countStatus=s=> (r.employees||[]).filter(x=>x.status===s).length;
+
+  const nod=(r.nurses||[]).slice(0,6);
+  while(nod.length<6) nod.push("");
+
+  const page1=`
+  <div class="print-page print-page-1">
+    <img class="print-logo" src="assets/health-services-logo.png">
+    <div class="print-title">CLINIC NURSE ENDORSEMENT FORM</div>
+    <div class="print-header-line">
+      <div class="shift">SHIFT TIME:
+        ${checkedShift(r.shift,"5:00 AM - 2:00 PM")} 5:00 AM - 2:00 PM
+        &nbsp;&nbsp;${checkedShift(r.shift,"1:00 PM - 10:00 PM")} 1:00 PM - 10:00 PM
+        &nbsp;&nbsp;${checkedShift(r.shift,"9:00 PM - 6:00 AM")} 9:00 PM - 6:00 AM
+      </div>
+      <div class="date">DATE: ${formatPrintDate(r.endorsement_date)}</div>
+    </div>
+    <div class="print-nod">
+      <div class="nod-label">NOD:</div>
+      <div class="nod-list">
+        ${nod.map((n,i)=>`<div class="nod-row">${esc(n)}</div>`).join("")}
+      </div>
+      <div></div>
+    </div>
+    ${printSection("CONSULTATIONS IN-PERSON","CONSULTATION",10)}
+    ${printSection("FIT TO WORK IN-PERSON","FTW-IN PERSON",9)}
+    ${printSection("FIT TO WORK ONLINE","FTW-ONLINE",9)}
+    ${printSection("HOSPITAL CONDUCTION","HOSPITAL CONDUCTION",9)}
+  </div>`;
+
+  const page2=`
+  <div class="print-page print-page-2">
+    ${printSection("WORK RELATED ACCIDENT","WRA",8)}
+    ${printSection("WORK MEDICAL EMERGENCY","WME",8)}
+    ${printSection("SICK LEAVE","SICK LEAVE",8,"normal","sick")}
+    ${printSection("MATERNITY LEAVE","ML",8,"ml","ml")}
+    ${printSection("MATERNITY LEAVE NOTIFICATION","ML NOTIFICATION",8,"ml","ml")}
+  </div>`;
+
+  const page3=`
+  <div class="print-page print-page-3">
+    <div class="carry-rows"><table><tbody>
+      <tr><td></td><td></td><td></td></tr>
+      <tr><td></td><td></td><td></td></tr>
+      <tr><td></td><td></td><td></td></tr>
+      <tr><td></td><td></td><td></td></tr>
+    </tbody></table></div>
+
+    <div class="remark-title">ENDORSEMENT REMARK</div>
+    <div class="remark-box">${esc(r.endorsement_remark||"")}</div>
+    <div class="remark-title">GENERAL ENDORSEMENT REMARK</div>
+    <div class="remark-box general-box">${esc(r.general_endorsement_remark||"")}</div>
+
+    <div class="summary-title">SUMMARY <span style="float:right;padding-right:.15in">TOTAL</span></div>
+    <table class="summary-table"><tbody>
+      ${summaryStatuses.map(x=>`<tr><td>${x[0]}</td><td>${countStatus(x[1])}</td></tr>`).join("")}
+    </tbody></table>
+
+    <div class="signatures">
+      <div class="sig"><div class="sig-label">CHARGE NURSE:</div><div class="sig-line">${esc(r.charge_nurse||"")}</div></div>
+      <div class="sig"><div class="sig-label">OUTGOING NURSE:</div><div class="sig-line">${esc(r.outgoing_nurse||"")}</div></div>
+      <div class="sig"><div class="sig-label">INCOMING NURSE:</div><div class="sig-line">${esc(r.incoming_nurse||"")}</div></div>
+      <div class="sig"><div class="sig-label">INCOMING NURSE:</div><div class="sig-line"></div></div>
+      <div class="sig"><div class="sig-label">INCOMING NURSE:</div><div class="sig-line"></div></div>
+      <div class="sig"><div class="sig-label">INCOMING NURSE:</div><div class="sig-line"></div></div>
+    </div>
+
+    <div class="approval">
+      <div class="sig"><div class="sig-line">ISRAEL S. GARCIA</div><div>Manager, CI for HR and Admin, and Health<br>Services Operations</div></div>
+      <div class="sig"><div class="sig-line">DR. MARICEL S. EDNILAN</div><div>Occupational Health Physician</div></div>
+    </div>
+  </div>`;
+
+  let el=document.getElementById("printDocument");
+  if(!el){
+    el=document.createElement("div");
+    el.id="printDocument";
+    el.className="print-document";
+    document.body.appendChild(el);
+  }
+  el.innerHTML=page1+page2+page3;
+}
+
 
 init();
