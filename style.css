@@ -21,8 +21,66 @@ textarea{min-height:80px;resize:vertical}.nurse-grid{display:grid;grid-template-
 .view-remark{white-space:pre-wrap;background:#f8fafb;border-left:3px solid #123b63;padding:12px;margin:8px 0 18px}
 .status{font-weight:700}.small{font-size:12px;color:#68737c}
 @media(max-width:900px){.form-grid,.view-head,.nurse-grid{grid-template-columns:1fr}.topbar{flex-direction:column;align-items:flex-start}.top-actions{width:100%;flex-wrap:wrap}}
+
+.print-document{display:none}
+@media print{
+  @page{size:legal portrait;margin:0}
+  html,body{width:8.5in;margin:0;padding:0;background:#fff}
+  .print-document{display:block!important}
+  .screen-only{display:none!important}
+  .print-page{width:8.5in;height:14in;page-break-after:always;break-after:page;position:relative;padding:.28in .34in .25in .34in;overflow:hidden;background:#fff;color:#000}
+  .print-page:last-child{page-break-after:auto;break-after:auto}
+  .print-logo{width:.55in;height:.55in;object-fit:contain;display:block;margin:0 auto .02in}
+  .print-title{text-align:center;font-size:18px;font-weight:800;line-height:1.05;margin:0 0 .08in}
+  .print-header-line{display:flex;align-items:center;gap:.12in;font-size:8px;font-weight:700;margin-bottom:.04in}
+  .print-header-line .shift{flex:1;white-space:nowrap}
+  .print-header-line .date{width:1.5in;text-align:right}
+  .print-nod{display:grid;grid-template-columns:.55in 3.55in 1fr;align-items:center;font-size:8px;font-weight:700;margin-bottom:.06in}
+  .print-nod .nod-label{font-weight:800}
+  .nod-list{border-bottom:1px solid #000;min-height:.16in;line-height:.18in;font-weight:400}
+  .nod-list .nod-row{height:.18in;border-bottom:1px solid #777;padding-left:.05in}
+  .print-section{border:1px solid #111;margin-top:.045in}
+  .print-section-title{background:#000;color:#fff;text-align:center;font-size:8px;font-weight:800;height:.18in;line-height:.18in}
+  .print-table{width:100%;border-collapse:collapse;table-layout:fixed}
+  .print-table th,.print-table td{border:1px solid #555;height:.155in;padding:.015in .025in;font-size:7px;line-height:1.05;vertical-align:middle}
+  .print-table th{font-weight:800;text-align:center;height:.17in}
+  .print-table td:first-child,.print-table th:first-child{width:.45in;text-align:center}
+  .print-table td:nth-child(2),.print-table th:nth-child(2){width:2.15in;text-align:center}
+  .print-table td:nth-child(3),.print-table th:nth-child(3){width:1.75in;text-align:center}
+  .print-table td:nth-child(4),.print-table th:nth-child(4){text-align:center}
+  .print-section.ml .print-table th:nth-child(2),.print-section.ml .print-table td:nth-child(2){width:auto}
+  .print-section.ml .print-table th:nth-child(3),.print-section.ml .print-table td:nth-child(3){width:1.55in}
+  .print-page-2 .print-section{margin-top:.055in}
+  .print-page-2 .print-table th,.print-page-2 .print-table td{height:.19in;font-size:7.2px}
+  .print-page-2 .print-section.sick .print-table th,.print-page-2 .print-section.sick .print-table td{height:.18in}
+  .print-page-3{padding-top:.12in}
+  .carry-rows{margin-bottom:.06in}
+  .carry-rows table{width:100%;border-collapse:collapse}
+  .carry-rows td{height:.17in;border:1px solid #555}
+  .remark-title,.summary-title{background:#000;color:#fff;text-align:center;font-size:8px;font-weight:800;height:.2in;line-height:.2in}
+  .remark-box{height:1.05in;border:1px solid #555;padding:.08in;font-size:8px;white-space:pre-wrap;overflow:hidden}
+  .general-box{height:1.05in}
+  .summary-table{width:100%;border-collapse:collapse;margin-top:.03in}
+  .summary-table td{border:1px solid #555;height:.205in;font-size:8px;padding:.02in}
+  .summary-table td:first-child{text-align:right;padding-right:.08in}
+  .summary-table td:last-child{width:.55in;text-align:center;font-weight:800}
+  .signatures{display:grid;grid-template-columns:1fr 1fr;column-gap:.18in;row-gap:.23in;margin-top:.28in}
+  .sig{text-align:center;font-size:7px;min-height:.55in}
+  .sig-line{border-bottom:1px solid #000;height:.24in;font-size:8px;font-weight:700;display:flex;align-items:end;justify-content:center;padding-bottom:.015in}
+  .sig-label{text-align:left;font-size:7px;font-weight:700;margin-bottom:-.02in}
+  .approval{display:grid;grid-template-columns:1fr 1fr;gap:.5in;margin-top:.35in}
+  .approval .sig{min-height:1.0in}
+  .approval .sig-line{height:.65in;align-items:end}
+}
+
 @media print{
  body{background:#fff}.topbar,.nav,.no-print,.actions{display:none!important}
  main{padding:0;max-width:none}.page{display:none!important}#page-view{display:block!important}
  .card{border:0;box-shadow:none;padding:0}.print-area{display:block}
+}
+
+@media print{
+  .topbar,.nav,main{display:none!important}
+  body> .print-document{display:block!important}
+  body > .print-document .print-page{display:block!important}
 }
