@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Health Services | Nurse Endorsement</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header class="topbar">
+  <div class="brand">
+    <div class="brand-title">HEALTH SERVICES</div>
+    <div class="brand-subtitle">NURSE ENDORSEMENT SYSTEM</div>
+  </div>
+  <div class="top-actions">
+    <button id="exportBtn" class="btn light">Export Backup</button>
+    <label class="btn light file-btn">Import Backup<input id="importFile" type="file" accept=".json" hidden></label>
+  </div>
+</header>
+
+<nav class="nav">
+  <button class="nav-btn active" data-page="new">New Endorsement</button>
+  <button class="nav-btn" data-page="records">Records</button>
+</nav>
+
+<main>
+<section id="page-new" class="page active">
+  <div class="card">
+    <h2>Endorsement Details</h2>
+    <div class="form-grid">
+      <label>Date <input id="date" type="date"></label>
+      <label>Shift
+        <select id="shift">
+          <option value="">Select shift</option>
+          <option>5:00 AM - 2:00 PM</option>
+          <option>1:00 PM - 10:00 PM</option>
+          <option>10:00 PM - 7:00 AM</option>
+        </select>
+      </label>
+      <label>Outgoing Nurse <input id="outgoing"></label>
+      <label>Incoming Nurse <input id="incoming"></label>
+      <label>Charge Nurse <input id="charge"></label>
+    </div>
+    <label>Endorsement Remark <textarea id="endorsementRemark"></textarea></label>
+    <label>General Endorsement Remark <textarea id="generalRemark"></textarea></label>
+  </div>
+
+  <div class="card">
+    <h2>Nurse on Duty</h2>
+    <div class="nurse-grid" id="nurseGrid"></div>
+  </div>
+
+  <div class="card">
+    <div class="section-head">
+      <h2>Employee Endorsement</h2>
+      <button id="addEmployee" class="btn secondary">+ Add Employee</button>
+    </div>
+    <div class="table-scroll">
+      <table id="employeeTable">
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>Employee Name</th>
+            <th>Complaint / Diagnosis</th>
+            <th>Remarks</th>
+            <th>Status</th>
+            <th>Date of Labor</th>
+            <th>Date of Return</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody id="employeeBody"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="actions">
+    <button id="saveBtn" class="btn primary">SAVE ENDORSEMENT</button>
+    <button id="clearBtn" class="btn secondary">CLEAR FORM</button>
+  </div>
+  <div id="formMessage" class="message"></div>
+</section>
+
+<section id="page-records" class="page">
+  <div class="card">
+    <div class="section-head">
+      <h2>Endorsement Records</h2>
+      <button id="refreshBtn" class="btn secondary">Refresh</button>
+    </div>
+    <div class="filters">
+      <input id="searchBox" placeholder="Search nurse or employee name">
+      <input id="dateFilter" type="date">
+      <button id="clearFilters" class="btn secondary">Clear Filters</button>
+    </div>
+    <div id="recordCount" class="record-count"></div>
+    <div class="table-scroll">
+      <table>
+        <thead>
+          <tr>
+            <th>Date</th><th>Shift</th><th>Outgoing Nurse</th><th>Incoming Nurse</th>
+            <th>Employees</th><th>Saved</th><th>Actions</th>
+          </tr>
+        </thead>
+        <tbody id="recordsBody"></tbody>
+      </table>
+    </div>
+  </div>
+</section>
+
+<section id="page-view" class="page">
+  <div class="card print-area">
+    <div class="section-head no-print">
+      <h2>Endorsement Record</h2>
+      <div>
+        <button id="backBtn" class="btn secondary">Back</button>
+        <button id="printBtn" class="btn primary">Print</button>
+      </div>
+    </div>
+    <div id="viewContent"></div>
+  </div>
+</section>
+</main>
+
+<script src="script.js"></script>
+</body>
+</html>

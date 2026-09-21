@@ -1,0 +1,251 @@
+const KEY = "health_services_endorsements_v1";
+const STATUSES = [
+  "CONSULTATION","FTW-IN PERSON","FTW-ONLINE","HOSPITAL CONDUCTION",
+  "WRA","WME","SICK LEAVE","SL NOTIFICATION","ML","ML NOTIFICATION"
+];
+
+const $ = id => document.getElementById(id);
+let currentViewId = null;
+
+function loadData(){
+  try { return JSON.parse(localStorage.getItem(KEY) || "[]"); }
+  catch(e){ return []; }
+}
+function saveData(data){ localStorage.setItem(KEY, JSON.stringify(data)); }
+
+function uid(){
+  return Date.now().toString(36) + "-" + Math.random().toString(36).slice(2,9);
+}
+function today(){
+  return new Date().toISOString().slice(0,10);
+}
+function esc(v){
+  return String(v ?? "").replace(/[&<>"']/g, c => ({
+    "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"
+  }[c]));
+}
+
+function init(){
+  $("date").value = today();
+
+  for(let i=1;i<=6;i++){
+    const label=document.createElement("label");
+    label.innerHTML=`Nurse on Duty ${i}<input class="nurse-input" data-order="${i}">`;
+    $("nurseGrid").appendChild(label);
+  }
+
+  addEmployee();
+  bind();
+  renderRecords();
+}
+
+function addEmployee(){
+  const tr=document.createElement("tr");
+  tr.innerHTML=`
+    <td class="row-number"></td>
+    <td><input class="emp-name"></td>
+    <td><input class="emp-diagnosis"></td>
+    <td><input class="emp-remarks"></td>
+    <td><select class="emp-status"><option value="">Select status</option>${STATUSES.map(x=>`<option>${x}</option>`).join("")}</select></td>
+    <td><input class="emp-labor" type="date"></td>
+    <td><input class="emp-return" type="date"></td>
+    <td><button type="button" class="icon-remove">×</button></td>`;
+  $("employeeBody").appendChild(tr);
+  renumber();
+  tr.querySelector(".icon-remove").onclick=()=>{tr.remove();renumber();};
+}
+function renumber(){
+  [...document.querySelectorAll("#employeeBody tr")].forEach((r,i)=>{
+    r.querySelector(".row-number").textContent=i+1;
+  });
+}
+
+function bind(){
+  document.querySelectorAll(".nav-btn").forEach(b=>{
+    b.onclick=()=>showPage(b.dataset.page);
+  });
+  $("addEmployee").onclick=addEmployee;
+  $("saveBtn").onclick=saveEndorsement;
+  $("clearBtn").onclick=clearForm;
+  $("refreshBtn").onclick=renderRecords;
+  $("searchBox").oninput=renderRecords;
+  $("dateFilter").onchange=renderRecords;
+  $("clearFilters").onclick=()=>{
+    $("searchBox").value=""; $("dateFilter").value=""; renderRecords();
+  };
+  $("backBtn").onclick=()=>showPage("records");
+  $("printBtn").onclick=()=>window.print();
+  $("exportBtn").onclick=exportBackup;
+  $("importFile").onchange=importBackup;
+}
+
+function showPage(page){
+  document.querySelectorAll(".page").forEach(x=>x.classList.remove("active"));
+  if(page==="new") $("page-new").classList.add("active");
+  if(page==="records"){ $("page-records").classList.add("active"); renderRecords(); }
+  if(page==="view") $("page-view").classList.add("active");
+  document.querySelectorAll(".nav-btn").forEach(x=>x.classList.toggle("active",x.dataset.page===page));
+}
+
+function saveEndorsement(){
+  const date=$("date").value, shift=$("shift").value;
+  if(!date || !shift){ message("Please enter the Date and Shift.",true); return; }
+
+  const employees=[...document.querySelectorAll("#employeeBody tr")].map(r=>({
+    employee_name:r.querySelector(".emp-name").value.trim(),
+    complaint_diagnosis:r.querySelector(".emp-diagnosis").value.trim(),
+    remarks:r.querySelector(".emp-remarks").value.trim(),
+    status:r.querySelector(".emp-status").value,
+    date_of_labor:r.querySelector(".emp-labor").value,
+    date_of_return:r.querySelector(".emp-return").value
+  })).filter(x=>x.employee_name);
+
+  const nurses=[...document.querySelectorAll(".nurse-input")].map(x=>x.value.trim()).filter(Boolean);
+
+  const record={
+    id:uid(),
+    endorsement_date:date,
+    shift,
+    outgoing_nurse:$("outgoing").value.trim(),
+    incoming_nurse:$("incoming").value.trim(),
+    charge_nurse:$("charge").value.trim(),
+    endorsement_remark:$("endorsementRemark").value,
+    general_endorsement_remark:$("generalRemark").value,
+    nurses,
+    employees,
+    created_at:new Date().toLocaleString()
+  };
+
+  const data=loadData();
+  data.push(record);
+  saveData(data);
+  message("ENDORSEMENT SAVED SUCCESSFULLY.");
+  setTimeout(clearForm,700);
+}
+
+function clearForm(){
+  $("date").value=today();
+  ["shift","outgoing","incoming","charge","endorsementRemark","generalRemark"].forEach(id=>$(id).value="");
+  document.querySelectorAll(".nurse-input").forEach(x=>x.value="");
+  $("employeeBody").innerHTML="";
+  addEmployee();
+  $("formMessage").textContent="";
+  $("formMessage").className="message";
+}
+
+function message(text,error=false){
+  $("formMessage").textContent=text;
+  $("formMessage").className=error?"message error":"message success";
+}
+
+function renderRecords(){
+  const q=($("searchBox")?.value||"").trim().toLowerCase();
+  const date=$("dateFilter")?.value||"";
+  let data=loadData().slice().sort((a,b)=>
+    (b.endorsement_date||"").localeCompare(a.endorsement_date||"") ||
+    (b.created_at||"").localeCompare(a.created_at||"")
+  );
+
+  data=data.filter(r=>{
+    const text=[
+      r.outgoing_nurse,r.incoming_nurse,r.charge_nurse,
+      ...(r.nurses||[]),...(r.employees||[]).map(x=>x.employee_name)
+    ].join(" ").toLowerCase();
+    return (!q || text.includes(q)) && (!date || r.endorsement_date===date);
+  });
+
+  $("recordCount").textContent=`${data.length} record${data.length===1?"":"s"} found`;
+
+  $("recordsBody").innerHTML=data.length ? data.map(r=>`
+    <tr>
+      <td>${esc(r.endorsement_date)}</td>
+      <td>${esc(r.shift)}</td>
+      <td>${esc(r.outgoing_nurse)}</td>
+      <td>${esc(r.incoming_nurse)}</td>
+      <td>${(r.employees||[]).length}</td>
+      <td>${esc(r.created_at)}</td>
+      <td>
+        <button class="btn secondary" onclick="viewRecord('${r.id}')">View</button>
+        <button class="btn secondary" onclick="deleteRecord('${r.id}')">Delete</button>
+      </td>
+    </tr>`).join("") :
+    `<tr><td colspan="7" class="empty">No endorsement records found.</td></tr>`;
+}
+
+function viewRecord(id){
+  const r=loadData().find(x=>x.id===id);
+  if(!r) return;
+  currentViewId=id;
+
+  $("viewContent").innerHTML=`
+    <div class="view-head">
+      <div><b>Date</b><br>${esc(r.endorsement_date)}</div>
+      <div><b>Shift</b><br>${esc(r.shift)}</div>
+      <div><b>Outgoing Nurse</b><br>${esc(r.outgoing_nurse)}</div>
+      <div><b>Incoming Nurse</b><br>${esc(r.incoming_nurse)}</div>
+      <div><b>Charge Nurse</b><br>${esc(r.charge_nurse)}</div>
+      <div><b>Saved</b><br>${esc(r.created_at)}</div>
+    </div>
+
+    <h3>Nurse on Duty</h3>
+    <ol>${(r.nurses||[]).map(n=>`<li>${esc(n)}</li>`).join("") || "<li>None recorded</li>"}</ol>
+
+    <h3>Endorsement Remark</h3>
+    <div class="view-remark">${esc(r.endorsement_remark||"")}</div>
+
+    <h3>General Endorsement Remark</h3>
+    <div class="view-remark">${esc(r.general_endorsement_remark||"")}</div>
+
+    <h3>Employee Endorsement</h3>
+    <div class="table-scroll">
+    <table>
+      <thead><tr><th>#</th><th>Employee Name</th><th>Complaint / Diagnosis</th><th>Remarks</th><th>Status</th><th>Date of Labor</th><th>Date of Return</th></tr></thead>
+      <tbody>${(r.employees||[]).map((x,i)=>`
+        <tr><td>${i+1}</td><td>${esc(x.employee_name)}</td><td>${esc(x.complaint_diagnosis)}</td>
+        <td>${esc(x.remarks)}</td><td class="status">${esc(x.status)}</td>
+        <td>${esc(x.date_of_labor)}</td><td>${esc(x.date_of_return)}</td></tr>`).join("") || `<tr><td colspan="7" class="empty">No employees recorded.</td></tr>`}
+      </tbody>
+    </table>
+    </div>`;
+  showPage("view");
+}
+
+function deleteRecord(id){
+  if(!confirm("Delete this endorsement record? This cannot be undone.")) return;
+  saveData(loadData().filter(x=>x.id!==id));
+  renderRecords();
+}
+
+function exportBackup(){
+  const payload={
+    app:"Health Services Nurse Endorsement System",
+    version:1,
+    exported_at:new Date().toISOString(),
+    records:loadData()
+  };
+  const blob=new Blob([JSON.stringify(payload,null,2)],{type:"application/json"});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement("a");
+  a.href=url; a.download="health-services-endorsement-backup.json"; a.click();
+  URL.revokeObjectURL(url);
+}
+
+function importBackup(event){
+  const file=event.target.files[0];
+  if(!file) return;
+  const reader=new FileReader();
+  reader.onload=()=>{
+    try{
+      const obj=JSON.parse(reader.result);
+      if(!Array.isArray(obj.records)) throw new Error("Invalid backup file.");
+      if(!confirm(`Import ${obj.records.length} record(s)? Existing records will be replaced.`)) return;
+      saveData(obj.records);
+      renderRecords();
+      alert("Backup imported successfully.");
+    }catch(e){alert("Could not import backup: "+e.message);}
+    event.target.value="";
+  };
+  reader.readAsText(file);
+}
+
+init();
